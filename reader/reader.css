@@ -1,0 +1,37 @@
+/* Read-aloud UI — inlined by build-book.sh. Uses the book's :root colors. */
+.ra-play {
+  font: inherit; font-size: 0.6em; line-height: 1;
+  margin-right: 0.5em; padding: 0.25em 0.45em;
+  color: var(--accent); background: none;
+  border: 1px solid var(--border); border-radius: 4px;
+  cursor: pointer; vertical-align: middle;
+}
+.ra-play:hover, .ra-play:focus-visible { border-color: var(--accent); }
+
+.ra-reading { background: rgba(196, 168, 124, 0.28); border-radius: 3px; transition: background 0.2s; }
+
+.ra-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+  padding: 0.6rem 1rem; background: var(--bg); color: var(--text);
+  border-top: 1px solid var(--border); box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  font: 0.8rem -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.ra-bar[hidden] { display: none; }
+.ra-label { flex: 1 1 12rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ra-controls { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.ra-controls button, .ra-controls select {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 4px; padding: 0.35rem 0.6rem; cursor: pointer;
+}
+.ra-controls select { max-width: 11rem; }
+.ra-controls button:hover { border-color: var(--accent); }
+body.ra-ready .container { padding-bottom: 8rem; }
+
+.ra-note {
+  position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 1000;
+  padding: 0.6rem 1rem; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 4px; font: 0.8rem -apple-system, Helvetica, Arial, sans-serif; color: var(--muted);
+}
+
+@media print { .ra-play, .ra-bar, .ra-note { display: none !important; } .ra-reading { background: none; } }
