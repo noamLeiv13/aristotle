@@ -119,6 +119,10 @@ ${BODY}
 done
 
 # --- Write the final HTML ---
+# Read-aloud (Web Speech API) is embedded so the single file carries it. See reader/.
+READER_CSS=$(cat "$SCRIPT_DIR/reader/reader.css")
+READER_JS=$(cat "$SCRIPT_DIR/reader/reader.js")
+
 cat > "$OUTPUT" <<HTMLEOF
 <!DOCTYPE html>
 <html lang="en">
@@ -409,6 +413,7 @@ canvas {
   .title-page { padding: 3rem 0 2rem; }
   .title-page h1 { font-size: 2rem; }
 }
+${READER_CSS}
 </style>
 </head>
 <body>
@@ -441,6 +446,9 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+</script>
+<script>
+${READER_JS}
 </script>
 </body>
 </html>
