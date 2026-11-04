@@ -103,6 +103,28 @@
     return units.filter(function (u) { return u.chunks.length; });
   }
 
+  // ---------- voices ----------
+
+  // Names that usually mean a neural / high-quality voice.
+  var GOOD_VOICE = /natural|neural|premium|enhanced|piper|siri|google/i;
+
+  function pageLang() { return (document.documentElement.lang || 'en').toLowerCase(); }
+
+  // Some systems expose tens of thousands of voices (every eSpeak language and
+  // variant, per engine). Keep the ones for the book's language, drop "Name+Variant"
+  // clones, and list likely-good voices first.
+  function voiceChoices(all) {
+    var lang = pageLang().slice(0, 2);
+    var list = all.filter(function (v) {
+      return v.lang.toLowerCase().indexOf(lang) === 0 && v.name.indexOf('+') < 0;
+    });
+    if (!list.length) list = all.slice(0, 50);
+    return list.sort(function (a, b) {
+      var ga = GOOD_VOICE.test(a.name) ? 0 : 1, gb = GOOD_VOICE.test(b.name) ? 0 : 1;
+      return ga - gb || a.name.localeCompare(b.name);
+    });
+  }
+
   // ---------- player ----------
 
   function create(root, synth, Utterance) {
@@ -131,8 +153,8 @@
     }
 
     function pickVoice() {
-      if (!prefs.voiceURI) return null;
-      return voices.filter(function (v) { return v.voiceURI === prefs.voiceURI; })[0] || null;
+      if (!prefs.voiceURI) return api.autoVoice();
+      return voices.filter(function (v) { return v.voiceURI === prefs.voiceURI; })[0] || api.autoVoice();
     }
 
     function speak() {
@@ -146,6 +168,7 @@
       ut.rate = prefs.rate || 1;
       var v = pickVoice();
       if (v) { ut.voice = v; ut.lang = v.lang; }
+      else ut.lang = pageLang();   // lets the browser pick a voice for the book's language
       ut.onend = function () { if (token === state.token && state.playing) advance(); };
       ut.onerror = function (e) {
         if (token !== state.token) return;
@@ -205,6 +228,10 @@
       },
       setVoices: function (list) { voices = list; emit(); },
       voices: function () { return voices; },
+      // Voices usable for the book's language, best-sounding first.
+      voiceChoices: function () { return voiceChoices(voices); },
+      // Best-sounding voice for the book's language, if one is recognisable by name.
+      autoVoice: function () { return voiceChoices(voices).filter(function (v) { return GOOD_VOICE.test(v.name); })[0] || null; },
       prefs: function () { return prefs; },
       onChange: function (fn) { listeners.push(fn); },
       status: function () {
@@ -252,15 +279,12 @@
     document.body.appendChild(bar);
 
     function fillVoices() {
-      var lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
-      var list = reader.voices().slice().sort(function (a, b) {
-        var ma = a.lang.toLowerCase().indexOf(lang) === 0 ? 0 : 1;
-        var mb = b.lang.toLowerCase().indexOf(lang) === 0 ? 0 : 1;
-        return ma - mb || a.name.localeCompare(b.name);
-      });
+      var auto = reader.autoVoice();
       voice.textContent = '';
-      voice.appendChild(el('option', { value: '' }, 'Default voice'));
-      list.forEach(function (v) { voice.appendChild(el('option', { value: v.voiceURI }, v.name + ' (' + v.lang + ')')); });
+      voice.appendChild(el('option', { value: '' }, auto ? 'Auto (' + auto.name + ')' : 'Default voice'));
+      reader.voiceChoices().forEach(function (v) {
+        voice.appendChild(el('option', { value: v.voiceURI }, v.name + ' (' + v.lang + ')'));
+      });
       voice.value = reader.prefs().voiceURI || '';
     }
 

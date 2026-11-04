@@ -14,10 +14,16 @@ const FAKE_SYNTH = () => {
   window.__finish = () => { const u = current; current = null; if (u && u.onend) u.onend({}); };
   const synth = {
     speaking: false,
-    getVoices: () => [{ name: 'Fake', lang: 'en-US', voiceURI: 'fake' }],
+    getVoices: () => [
+      { name: 'Fake', lang: 'en-US', voiceURI: 'fake' },
+      { name: 'English (America) piper-tts-generic', lang: 'en-US', voiceURI: 'piper' },
+      { name: 'English (America)+Adam piper-tts-generic', lang: 'en-US', voiceURI: 'piper-adam' },
+      { name: 'Afrikaans espeak-ng', lang: 'af', voiceURI: 'af' },
+      { name: 'Deutsch', lang: 'de-DE', voiceURI: 'de' },
+    ],
     addEventListener() {},
     cancel() { const u = current; current = null; if (u && u.onerror) u.onerror({ error: 'canceled' }); },
-    speak(u) { current = u; spoken.push(u.text); },
+    speak(u) { current = u; spoken.push(u.text); window.__lastUtt = u; },
   };
   Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
   window.SpeechSynthesisUtterance = function (text) { this.text = text; };
@@ -58,6 +64,19 @@ async function open(browser, file, withSynth) {
     check('chunks stay short', info.maxChunk <= 200, `max ${info.maxChunk}`);
     check('canvas/script text not read', !/getContext|rough\.canvas|function\s*\(/.test(info.text), 'code leaked into text');
     check('bar hidden until reading starts', info.barHidden, '');
+
+    // Voice handling: only the book's language, no "+Variant" clones, best-sounding voice auto-picked.
+    const vo = await page.evaluate(() => {
+      const r = window.AristotleReader;
+      r.playFrom(0);
+      const opts = [...document.querySelectorAll('.ra-bar select[aria-label=Voice] option')].map((o) => o.textContent);
+      const u = window.__lastUtt;
+      r.stop();
+      window.__spoken.length = 0;
+      return { opts, voice: u.voice && u.voice.voiceURI, lang: u.lang };
+    });
+    check('voice list limited to book language, no variant clones', vo.opts.length === 3 && !vo.opts.some((o) => /Afrikaans|Deutsch|\+/.test(o)), JSON.stringify(vo.opts));
+    check('auto-picks the neural-looking voice', vo.voice === 'piper' && vo.lang === 'en-US', JSON.stringify(vo));
 
     // Start from the 3rd chapter's first section.
     const second = await page.evaluate(() => {
