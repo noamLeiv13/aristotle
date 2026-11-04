@@ -47,11 +47,6 @@ if [ ! -d "$CHAPTERS_DIR" ]; then
   exit 1
 fi
 
-# All renderer CDN scripts — single source of truth in cdn-scripts.js.
-# To add a new renderer script, edit cdn-scripts.js (see comments there).
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CDN_SCRIPTS=$(node -e "console.log(require('$SCRIPT_DIR/cdn-scripts.js').BUILD_HEAD.join('\n'))")
-
 # Extract title from outline H1 if available, else use directory name
 if [ -f "$OUTLINE" ]; then
   TITLE=$(grep -m1 '^# ' "$OUTLINE" | sed 's/^# //')
@@ -119,6 +114,11 @@ ${BODY}
 done
 
 # --- Write the final HTML ---
+# Renderer libraries are embedded (not linked) so the file works offline and
+# can be shared on its own. See inline-libs.js.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INLINE_LIBS=$(node "$SCRIPT_DIR/inline-libs.js" <<<"$CHAPTERS_HTML")
+
 cat > "$OUTPUT" <<HTMLEOF
 <!DOCTYPE html>
 <html lang="en">
@@ -126,7 +126,7 @@ cat > "$OUTPUT" <<HTMLEOF
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${TITLE}</title>
-${CDN_SCRIPTS}
+${INLINE_LIBS}
 <style>
 :root {
   --bg: #faf8f4;

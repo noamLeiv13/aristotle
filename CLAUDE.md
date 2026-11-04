@@ -44,6 +44,8 @@ Set either to `0`/`off` to disable. On a timeout the engine recovers to `idle` a
 
 `build-book.sh` compiles chapter markdown into a single `breakdown.html` via pandoc. Deterministic — no LLM involved.
 
+`breakdown.html` is self-contained: `inline-libs.js` embeds the renderer libraries a book uses (from root `node_modules`, versions pinned to `cdn-scripts.js`), so the one file works offline and can be sent to a phone or anyone as-is.
+
 `skills/` contains rendering skill docs (Rough.js, Chart.js, VexFlow) that chapter agents load on demand.
 
 `verifiers/` contains headless-browser scripts that validate visual rendering and text/drawing collisions.

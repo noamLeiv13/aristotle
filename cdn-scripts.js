@@ -1,13 +1,17 @@
 // Single source of truth for renderer CDN URLs.
 //
 // Consumers:
-//   - build-book.sh        — via `node -e 'console.log(require(...).BUILD_HEAD.join("\n"))'`
+//   - build-book.sh        — via inline-libs.js, which inlines the libraries the book
+//                            uses so breakdown.html is a single self-contained file
 //   - verify-render.js     — via `require('../cdn-scripts.js').RENDERER_SCRIPTS`
 //   - verify-collisions.js — via `require('../cdn-scripts.js').RENDERER_SCRIPTS`
 //
 // When adding a new renderer skill that needs a new CDN script:
-//   1. Add the URL to RENDERER_SCRIPTS below.
-//   2. That's it. Build script and both verifiers pick it up automatically.
+//   1. Add the URL to RENDERER_SCRIPTS below (exact version, jsdelivr /npm/ URL).
+//   2. `npm install --save-exact <pkg>@<version>` in the repo root — build-book.sh
+//      inlines the copy from node_modules, so it must match the URL's version.
+//   3. Add a USAGE pattern (below) so books only embed the library when they use it.
+//   Verifiers load the URLs directly.
 //
 // KaTeX is for the build only (renders inline math in the published HTML);
 // it's not needed for visual verification.
@@ -32,10 +36,17 @@ const KATEX_HEAD = [
   '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>',
 ];
 
-const BUILD_HEAD = [
-  ...KATEX_HEAD,
-  ...RENDERER_STYLES.map((url) => `<link rel="stylesheet" href="${url}">`),
-  ...RENDERER_SCRIPTS.map((url) => `<script src="${url}"></script>`),
-];
+// npm package name -> pattern that signals a book's chapter HTML needs it.
+// Used by inline-libs.js; libraries without a match are left out of the book.
+const USAGE = {
+  'roughjs': /\brough\.(canvas|svg)\b/,
+  'chart.js': /\bnew Chart\(/,
+  'vexflow': /\bVexFlow\b/,
+  'p5': /\bnew p5\(/,
+  '3dmol': /\$3Dmol\b/,
+  'jsxgraph': /\bJXG\b/,
+  '@svgdotjs/svg.js': /\bSVG\(/,
+  'katex': /class="math/,
+};
 
-module.exports = { RENDERER_SCRIPTS, RENDERER_STYLES, KATEX_HEAD, BUILD_HEAD };
+module.exports = { RENDERER_SCRIPTS, RENDERER_STYLES, KATEX_HEAD, USAGE };
